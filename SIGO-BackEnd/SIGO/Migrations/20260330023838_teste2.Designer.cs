@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SIGO.Data;
@@ -11,9 +12,11 @@ using SIGO.Data;
 namespace SIGO.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260330023838_teste2")]
+    partial class teste2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -135,16 +138,14 @@ namespace SIGO.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("cor");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("NomeCor")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("nome");
+                        .HasColumnType("character varying(50)");
 
                     b.Property<int?>("VeiculoId")
                         .HasColumnType("integer");
@@ -153,7 +154,7 @@ namespace SIGO.Migrations
 
                     b.HasIndex("VeiculoId");
 
-                    b.ToTable("cor");
+                    b.ToTable("Cores");
                 });
 
             modelBuilder.Entity("SIGO.Objects.Models.Funcionario", b =>
@@ -361,10 +362,6 @@ namespace SIGO.Migrations
                         .HasColumnType("date")
                         .HasColumnName("garantia");
 
-                    b.Property<int>("IdMarca")
-                        .HasColumnType("integer")
-                        .HasColumnName("idmarca");
-
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -391,9 +388,7 @@ namespace SIGO.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IdMarca");
-
-                    b.ToTable("peca");
+                    b.ToTable("Peca");
                 });
 
             modelBuilder.Entity("SIGO.Objects.Models.Pedido", b =>
@@ -674,6 +669,21 @@ namespace SIGO.Migrations
                     b.ToTable("veiculo");
                 });
 
+            modelBuilder.Entity("peca_marca", b =>
+                {
+                    b.Property<int>("id_peca")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("id_marca")
+                        .HasColumnType("integer");
+
+                    b.HasKey("id_peca", "id_marca");
+
+                    b.HasIndex("id_marca");
+
+                    b.ToTable("peca_marca", (string)null);
+                });
+
             modelBuilder.Entity("SIGO.Objects.Models.Cor", b =>
                 {
                     b.HasOne("SIGO.Objects.Models.Veiculo", null)
@@ -705,17 +715,6 @@ namespace SIGO.Migrations
                     b.HasOne("SIGO.Objects.Models.Veiculo", null)
                         .WithMany("Marcas")
                         .HasForeignKey("VeiculoId");
-                });
-
-            modelBuilder.Entity("SIGO.Objects.Models.Peca", b =>
-                {
-                    b.HasOne("SIGO.Objects.Models.Marca", "Marca")
-                        .WithMany("Pecas")
-                        .HasForeignKey("IdMarca")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Marca");
                 });
 
             modelBuilder.Entity("SIGO.Objects.Models.Pedido", b =>
@@ -821,6 +820,21 @@ namespace SIGO.Migrations
                     b.Navigation("Cliente");
                 });
 
+            modelBuilder.Entity("peca_marca", b =>
+                {
+                    b.HasOne("SIGO.Objects.Models.Marca", null)
+                        .WithMany()
+                        .HasForeignKey("id_marca")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SIGO.Objects.Models.Peca", null)
+                        .WithMany()
+                        .HasForeignKey("id_peca")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SIGO.Objects.Models.Cliente", b =>
                 {
                     b.Navigation("Telefones");
@@ -831,11 +845,6 @@ namespace SIGO.Migrations
             modelBuilder.Entity("SIGO.Objects.Models.Funcionario", b =>
                 {
                     b.Navigation("Telefones");
-                });
-
-            modelBuilder.Entity("SIGO.Objects.Models.Marca", b =>
-                {
-                    b.Navigation("Pecas");
                 });
 
             modelBuilder.Entity("SIGO.Objects.Models.Oficina", b =>

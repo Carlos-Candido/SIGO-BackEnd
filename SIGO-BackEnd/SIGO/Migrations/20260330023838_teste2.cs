@@ -7,11 +7,41 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace SIGO.Migrations
 {
     /// <inheritdoc />
-    public partial class PrimeiraMigration : Migration
+    public partial class teste2 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "cliente",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    nome = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    senha = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    cpf_cnpj = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
+                    obs = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    razao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    datanasc = table.Column<DateOnly>(type: "date", nullable: true),
+                    sexo = table.Column<int>(type: "integer", nullable: false),
+                    numero = table.Column<int>(type: "integer", nullable: false),
+                    rua = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    cidade = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    cep = table.Column<string>(type: "text", nullable: false),
+                    bairro = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    estado = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    pais = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    complemento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    tipocliente = table.Column<int>(type: "integer", nullable: false),
+                    situacao = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_cliente", x => x.id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "funcionario",
                 columns: table => new
@@ -45,7 +75,7 @@ namespace SIGO.Migrations
                     bairro = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     estado = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     pais = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    complemento = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    complemento = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     situacao = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -61,7 +91,7 @@ namespace SIGO.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     nome = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     tipo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    descricao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    descricao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     valor = table.Column<float>(type: "real", nullable: false),
                     quantidade = table.Column<int>(type: "integer", nullable: false),
                     garantia = table.Column<DateOnly>(type: "date", nullable: false),
@@ -103,164 +133,19 @@ namespace SIGO.Migrations
                     ano = table.Column<int>(type: "integer", nullable: false),
                     quilometragem = table.Column<int>(type: "integer", nullable: false),
                     combustivel = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    seguro = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    status = table.Column<int>(type: "integer", nullable: false)
+                    seguro = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    status = table.Column<int>(type: "integer", nullable: false),
+                    id_cliente = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_veiculo", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "funcionario_servico",
-                columns: table => new
-                {
-                    idFuncionario = table.Column<int>(type: "integer", nullable: false),
-                    idServico = table.Column<int>(type: "integer", nullable: false),
-                    tempodec = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_funcionario_servico", x => new { x.idFuncionario, x.idServico });
                     table.ForeignKey(
-                        name: "FK_funcionario_servico_funcionario_idFuncionario",
-                        column: x => x.idFuncionario,
-                        principalTable: "funcionario",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_funcionario_servico_servico_idServico",
-                        column: x => x.idServico,
-                        principalTable: "servico",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "cliente",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    nome = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    senha = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    cpf_cnpj = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
-                    obs = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    razao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    datanasc = table.Column<DateOnly>(type: "date", nullable: true),
-                    sexo = table.Column<int>(type: "integer", nullable: false),
-                    numero = table.Column<int>(type: "integer", nullable: false),
-                    rua = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    cidade = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    cep = table.Column<string>(type: "text", nullable: false),
-                    bairro = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    estado = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    pais = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    complemento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    tipocliente = table.Column<int>(type: "integer", nullable: false),
-                    situacao = table.Column<int>(type: "integer", nullable: false),
-                    VeiculoId = table.Column<int>(type: "integer", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_cliente", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_cliente_veiculo_VeiculoId",
-                        column: x => x.VeiculoId,
-                        principalTable: "veiculo",
-                        principalColumn: "id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Cores",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    NomeCor = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    VeiculoId = table.Column<int>(type: "integer", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Cores", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Cores_veiculo_VeiculoId",
-                        column: x => x.VeiculoId,
-                        principalTable: "veiculo",
-                        principalColumn: "id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "marca",
-                columns: table => new
-                {
-                    idMarca = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    nomeMarca = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    descMarca = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    tipoMarca = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    VeiculoId = table.Column<int>(type: "integer", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_marca", x => x.idMarca);
-                    table.ForeignKey(
-                        name: "FK_marca_veiculo_VeiculoId",
-                        column: x => x.VeiculoId,
-                        principalTable: "veiculo",
-                        principalColumn: "id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "pedido",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    id_cliente = table.Column<int>(type: "integer", nullable: false),
-                    id_funcionario = table.Column<int>(type: "integer", nullable: false),
-                    id_oficina = table.Column<int>(type: "integer", nullable: false),
-                    id_veiculo = table.Column<int>(type: "integer", nullable: false),
-                    valorTotal = table.Column<float>(type: "real", nullable: false),
-                    descontoReais = table.Column<float>(type: "real", nullable: false),
-                    descontoPorcentagem = table.Column<float>(type: "real", nullable: false),
-                    descontoTotalReais = table.Column<float>(type: "real", nullable: false),
-                    descontoServicoPorcentagem = table.Column<float>(type: "real", nullable: false),
-                    descontoServicoReais = table.Column<float>(type: "real", nullable: false),
-                    descontoPecaPorcentagem = table.Column<float>(type: "real", nullable: false),
-                    descontoPecaReais = table.Column<float>(type: "real", nullable: false),
-                    observacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    dataInicio = table.Column<DateOnly>(type: "date", nullable: false),
-                    dataFim = table.Column<DateOnly>(type: "date", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_pedido", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_pedido_cliente_id_cliente",
+                        name: "FK_veiculo_cliente_id_cliente",
                         column: x => x.id_cliente,
                         principalTable: "cliente",
                         principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_pedido_funcionario_id_funcionario",
-                        column: x => x.id_funcionario,
-                        principalTable: "funcionario",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_pedido_oficina_id_oficina",
-                        column: x => x.id_oficina,
-                        principalTable: "oficina",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_pedido_veiculo_id_veiculo",
-                        column: x => x.id_veiculo,
-                        principalTable: "veiculo",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -297,6 +182,122 @@ namespace SIGO.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "funcionario_servico",
+                columns: table => new
+                {
+                    idFuncionario = table.Column<int>(type: "integer", nullable: false),
+                    idServico = table.Column<int>(type: "integer", nullable: false),
+                    tempodec = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_funcionario_servico", x => new { x.idFuncionario, x.idServico });
+                    table.ForeignKey(
+                        name: "FK_funcionario_servico_funcionario_idFuncionario",
+                        column: x => x.idFuncionario,
+                        principalTable: "funcionario",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_funcionario_servico_servico_idServico",
+                        column: x => x.idServico,
+                        principalTable: "servico",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Cores",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    NomeCor = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    VeiculoId = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Cores", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Cores_veiculo_VeiculoId",
+                        column: x => x.VeiculoId,
+                        principalTable: "veiculo",
+                        principalColumn: "id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "marca",
+                columns: table => new
+                {
+                    idMarca = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    nomeMarca = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    descMarca = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    tipoMarca = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    VeiculoId = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_marca", x => x.idMarca);
+                    table.ForeignKey(
+                        name: "FK_marca_veiculo_VeiculoId",
+                        column: x => x.VeiculoId,
+                        principalTable: "veiculo",
+                        principalColumn: "id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "pedido",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_cliente = table.Column<int>(type: "integer", nullable: false),
+                    id_funcionario = table.Column<int>(type: "integer", nullable: false),
+                    id_oficina = table.Column<int>(type: "integer", nullable: false),
+                    id_veiculo = table.Column<int>(type: "integer", nullable: false),
+                    valorTotal = table.Column<float>(type: "real", nullable: false),
+                    descontoReais = table.Column<float>(type: "real", nullable: false),
+                    descontoPorcentagem = table.Column<float>(type: "real", nullable: false),
+                    descontoTotalReais = table.Column<float>(type: "real", nullable: false),
+                    descontoServicoPorcentagem = table.Column<float>(type: "real", nullable: false),
+                    descontoServicoReais = table.Column<float>(type: "real", nullable: false),
+                    descontoPecaPorcentagem = table.Column<float>(type: "real", nullable: false),
+                    descontoPecaReais = table.Column<float>(type: "real", nullable: false),
+                    observacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    dataInicio = table.Column<DateOnly>(type: "date", nullable: false),
+                    dataFim = table.Column<DateOnly>(type: "date", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_pedido", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_pedido_cliente_id_cliente",
+                        column: x => x.id_cliente,
+                        principalTable: "cliente",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_pedido_funcionario_id_funcionario",
+                        column: x => x.id_funcionario,
+                        principalTable: "funcionario",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_pedido_oficina_id_oficina",
+                        column: x => x.id_oficina,
+                        principalTable: "oficina",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_pedido_veiculo_id_veiculo",
+                        column: x => x.id_veiculo,
+                        principalTable: "veiculo",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "peca_marca",
                 columns: table => new
                 {
@@ -328,8 +329,8 @@ namespace SIGO.Migrations
                     idpeca = table.Column<int>(type: "integer", nullable: false),
                     quantidade = table.Column<int>(type: "integer", nullable: false),
                     datainstalacao = table.Column<DateOnly>(type: "date", nullable: false),
-                    estado = table.Column<string>(type: "text", nullable: false),
-                    observacao = table.Column<string>(type: "text", nullable: false)
+                    estado = table.Column<string>(type: "text", nullable: true),
+                    observacao = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -372,11 +373,6 @@ namespace SIGO.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_cliente_VeiculoId",
-                table: "cliente",
-                column: "VeiculoId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Cores_VeiculoId",
@@ -442,6 +438,11 @@ namespace SIGO.Migrations
                 name: "IX_telefone_OficinaId",
                 table: "telefone",
                 column: "OficinaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_veiculo_id_cliente",
+                table: "veiculo",
+                column: "id_cliente");
         }
 
         /// <inheritdoc />
@@ -478,9 +479,6 @@ namespace SIGO.Migrations
                 name: "servico");
 
             migrationBuilder.DropTable(
-                name: "cliente");
-
-            migrationBuilder.DropTable(
                 name: "funcionario");
 
             migrationBuilder.DropTable(
@@ -488,6 +486,9 @@ namespace SIGO.Migrations
 
             migrationBuilder.DropTable(
                 name: "veiculo");
+
+            migrationBuilder.DropTable(
+                name: "cliente");
         }
     }
 }
