@@ -2,9 +2,9 @@ namespace SIGO.Objects.Dtos.Entities
 {
     public class MarcaDTO
     {
-        public int IdMarca { get; set; }
-        public string NomeMarca { get; set; }
-        public string DescMarca { get; set; }
+        public int Id { get; set; }
+        public string Nome { get; set; }
+        public string Desc { get; set; }
         public string TipoMarca { get; set; }
     }
 }

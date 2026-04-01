@@ -21,14 +21,14 @@ namespace SIGO.Data.Repositories
         public async Task<IEnumerable<Marca>> GetByName(string nomeMarca)
         {
             return await _context.Marcas
-                .Where(m => m.NomeMarca.Contains(nomeMarca))
+                .Where(m => m.Nome.Contains(nomeMarca))
                 .ToListAsync();
         }
 
         public async Task<Marca?> GetById(int idMarca)
         {
             return await _context.Marcas
-                .FirstOrDefaultAsync(m => m.IdMarca == idMarca);
+                .FirstOrDefaultAsync(m => m.Id == idMarca);
         }
     }
 }

@@ -35,7 +35,7 @@ namespace SIGO.Controllers
         }
 
         [HttpGet]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> GetAll()
         {
             var funcionarioDTO = await _funcionarioService.GetAll();
@@ -48,7 +48,7 @@ namespace SIGO.Controllers
         }
 
         [HttpGet("id/{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> GetFuncionarioById(int id)
         {
             var funcionarioDTO = await _funcionarioService.GetById(id);
@@ -60,7 +60,7 @@ namespace SIGO.Controllers
         }
 
         [HttpGet("name/{nome}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> GetFuncionarioByNome(string nome)
         {
             var clientesDto = await _funcionarioService.GetFuncionarioByNome(nome);
@@ -118,7 +118,7 @@ namespace SIGO.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> Put(int id, FuncionarioDTO funcionarioDTO)
         {
             if (funcionarioDTO is null)
@@ -171,7 +171,7 @@ namespace SIGO.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> DeleteFuncionario(int id)
         {
             try

@@ -17,7 +17,6 @@ namespace SIGO.Data.Repositories
         {
             return await _context.Veiculos
                 .Include(v => v.Cliente)
-                .Include(v => v.Cor) // inclui cores relacionadas
                 .ToListAsync();
         }
 
@@ -25,7 +24,6 @@ namespace SIGO.Data.Repositories
         {
             return await _context.Veiculos
                 .Include(v => v.Cliente)
-                .Include(v => v.Cor)
                 .Where(v => v.PlacaVeiculo.Contains(placa))
                 .ToListAsync();
         }
@@ -34,7 +32,6 @@ namespace SIGO.Data.Repositories
         {
             return await _context.Veiculos
                 .Include(v => v.Cliente)
-                .Include(v => v.Cor)
                 .Where(v => v.TipoVeiculo.Contains(tipo))
                 .ToListAsync();
         }
@@ -43,7 +40,6 @@ namespace SIGO.Data.Repositories
         {
             return await _context.Veiculos
                 .Include(v => v.Cliente)
-                .Include(v => v.Cor)
                 .FirstOrDefaultAsync(v => v.Id == id);
         }
         public async Task UpdateVeiculo(Veiculo veiculo)

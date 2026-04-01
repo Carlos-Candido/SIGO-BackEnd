@@ -13,7 +13,6 @@ namespace SIGO.Data
         public DbSet<Servico> Servicos { get; set; }
         public DbSet<Marca> Marcas { get; set; }
         public DbSet<Veiculo> Veiculos { get; set; }
-        public DbSet<Cor> Cores { get; set; }
         public DbSet<Funcionario> Funcionarios { get; set; }
         public DbSet<Peca> Pecas { get; set; }
         public DbSet<Oficina> Oficinas { get; set; }
@@ -29,7 +28,6 @@ namespace SIGO.Data
             MarcaBuilder.Build(modelBuilder);
 
             VeiculoBuilder.Build(modelBuilder);
-            CorBuilder.Build(modelBuilder);
             FuncionarioBuilder.Build(modelBuilder);
             PecaBuilder.Build(modelBuilder);
             OficinaBuilder.Build(modelBuilder);

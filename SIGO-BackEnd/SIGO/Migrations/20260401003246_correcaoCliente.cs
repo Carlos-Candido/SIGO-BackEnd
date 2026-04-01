@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace SIGO.Migrations
 {
     /// <inheritdoc />
-    public partial class Teste : Migration
+    public partial class correcaoCliente : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -115,6 +115,7 @@ namespace SIGO.Migrations
                     quilometragem = table.Column<int>(type: "integer", nullable: false),
                     combustivel = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     seguro = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    cor = table.Column<string>(type: "text", nullable: false),
                     status = table.Column<int>(type: "integer", nullable: false),
                     id_cliente = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -188,38 +189,19 @@ namespace SIGO.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "cor",
-                columns: table => new
-                {
-                    cor = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    nome = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    VeiculoId = table.Column<int>(type: "integer", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_cor", x => x.cor);
-                    table.ForeignKey(
-                        name: "FK_cor_veiculo_VeiculoId",
-                        column: x => x.VeiculoId,
-                        principalTable: "veiculo",
-                        principalColumn: "id");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "marca",
                 columns: table => new
                 {
-                    idMarca = table.Column<int>(type: "integer", nullable: false)
+                    id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    nomeMarca = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    descMarca = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    tipoMarca = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    nome = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    desc = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    tipomarca = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     VeiculoId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_marca", x => x.idMarca);
+                    table.PrimaryKey("PK_marca", x => x.id);
                     table.ForeignKey(
                         name: "FK_marca_veiculo_VeiculoId",
                         column: x => x.VeiculoId,
@@ -302,7 +284,7 @@ namespace SIGO.Migrations
                         name: "FK_peca_marca_idmarca",
                         column: x => x.idmarca,
                         principalTable: "marca",
-                        principalColumn: "idMarca",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -358,11 +340,6 @@ namespace SIGO.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_cor_VeiculoId",
-                table: "cor",
-                column: "VeiculoId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_funcionario_servico_idServico",
@@ -433,9 +410,6 @@ namespace SIGO.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "cor");
-
             migrationBuilder.DropTable(
                 name: "funcionario_servico");
 

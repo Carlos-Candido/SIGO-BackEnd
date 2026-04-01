@@ -33,6 +33,9 @@ namespace SIGO.Objects.Models
         [Column("seguro")]
         public string Seguro { get; set; }
 
+        [Column("cor")]
+        public string Cor { get; set; }
+
         [Column("status")]
         public Status Status { get; set; }
 
@@ -41,8 +44,6 @@ namespace SIGO.Objects.Models
 
         public Cliente Cliente { get; set; }
 
-        public ICollection<Cor> Cor { get; set; } = new List<Cor>();
-
         public ICollection<Marca> Marcas { get; set; } = new List<Marca>();
 
         public Veiculo()
@@ -50,7 +51,7 @@ namespace SIGO.Objects.Models
 
         }
         public Veiculo(int id, string nomeVeiculo, string tipoVeiculo, string placaVeiculo, string chassiVeiculo, int anoFab, int quilometragem,
-            string combustivel, string seguro, Status status)
+            string combustivel, string seguro, string cor, Status status)
         {
             Id = id;
             NomeVeiculo = nomeVeiculo;
@@ -61,6 +62,7 @@ namespace SIGO.Objects.Models
             Quilometragem = quilometragem;
             Combustivel = combustivel;
             Seguro = seguro;
+            Cor = cor;
             Status = status;
         }
     }

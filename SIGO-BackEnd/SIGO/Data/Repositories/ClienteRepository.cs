@@ -19,7 +19,6 @@ namespace SIGO.Data.Repositories
             return await _context.Clientes
                 .Include(c => c.Telefones)
                 .Include(c => c.Veiculos)
-                    .ThenInclude(v => v.Cor)
                 .ToListAsync();
         }
 
@@ -28,7 +27,6 @@ namespace SIGO.Data.Repositories
             return await _context.Clientes
                 .Include(c => c.Telefones)
                 .Include(c => c.Veiculos)
-                    .ThenInclude(v => v.Cor)
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
@@ -37,7 +35,6 @@ namespace SIGO.Data.Repositories
             return await _context.Clientes
                 .Include(c => c.Telefones)
                 .Include(c => c.Veiculos)
-                    .ThenInclude(v => v.Cor)
                 .Where(c => c.Nome.Contains(nome))
                 .ToListAsync();
         }

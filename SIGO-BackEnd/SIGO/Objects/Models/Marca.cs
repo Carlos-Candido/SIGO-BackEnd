@@ -5,27 +5,27 @@ namespace SIGO.Objects.Models
     [Table("marca")]
     public class Marca
     {
-        [Column("idMarca")]
-        public int IdMarca { get; set; }
+        [Column("id")]
+        public int Id { get; set; }
 
-        [Column("nomeMarca")]
-        public string NomeMarca { get; set; }
+        [Column("nome")]
+        public string Nome { get; set; }
 
-        [Column("descMarca")]
-        public string DescMarca { get; set; }
+        [Column("desc")]
+        public string Desc { get; set; }
 
-        [Column("tipoMarca")]
+        [Column("tipomarca")]
         public string TipoMarca { get; set; }
 
         public ICollection<Peca> Pecas { get; set; } = new List<Peca>();
 
         public Marca() { }
 
-        public Marca(int idMarca, string nomeMarca, string descMarca, string tipoMarca)
+        public Marca(int id, string nome, string desc, string tipoMarca)
         {
-            IdMarca = idMarca;
-            NomeMarca = nomeMarca;
-            DescMarca = descMarca;
+            Id = id;
+            Nome = nome;
+            Desc = desc;
             TipoMarca = tipoMarca;
         }
     }

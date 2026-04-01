@@ -131,31 +131,6 @@ namespace SIGO.Migrations
                     b.ToTable("cliente");
                 });
 
-            modelBuilder.Entity("SIGO.Objects.Models.Cor", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("cor");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("NomeCor")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("nome");
-
-                    b.Property<int?>("VeiculoId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VeiculoId");
-
-                    b.ToTable("cor");
-                });
-
             modelBuilder.Entity("SIGO.Objects.Models.Funcionario", b =>
                 {
                     b.Property<int>("Id")
@@ -226,34 +201,34 @@ namespace SIGO.Migrations
 
             modelBuilder.Entity("SIGO.Objects.Models.Marca", b =>
                 {
-                    b.Property<int>("IdMarca")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("idMarca");
+                        .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdMarca"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("DescMarca")
+                    b.Property<string>("Desc")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("descMarca");
+                        .HasColumnName("desc");
 
-                    b.Property<string>("NomeMarca")
+                    b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasColumnName("nomeMarca");
+                        .HasColumnName("nome");
 
                     b.Property<string>("TipoMarca")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("tipoMarca");
+                        .HasColumnName("tipomarca");
 
                     b.Property<int?>("VeiculoId")
                         .HasColumnType("integer");
 
-                    b.HasKey("IdMarca");
+                    b.HasKey("Id");
 
                     b.HasIndex("VeiculoId");
 
@@ -646,6 +621,11 @@ namespace SIGO.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("combustivel");
 
+                    b.Property<string>("Cor")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("cor");
+
                     b.Property<string>("NomeVeiculo")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -682,13 +662,6 @@ namespace SIGO.Migrations
                     b.HasIndex("ClienteId");
 
                     b.ToTable("veiculo");
-                });
-
-            modelBuilder.Entity("SIGO.Objects.Models.Cor", b =>
-                {
-                    b.HasOne("SIGO.Objects.Models.Veiculo", null)
-                        .WithMany("Cor")
-                        .HasForeignKey("VeiculoId");
                 });
 
             modelBuilder.Entity("SIGO.Objects.Models.Funcionario_Servico", b =>
@@ -867,8 +840,6 @@ namespace SIGO.Migrations
 
             modelBuilder.Entity("SIGO.Objects.Models.Veiculo", b =>
                 {
-                    b.Navigation("Cor");
-
                     b.Navigation("Marcas");
                 });
 #pragma warning restore 612, 618
