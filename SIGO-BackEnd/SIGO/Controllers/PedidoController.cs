@@ -6,8 +6,9 @@ using SIGO.Services.Interfaces;
 
 namespace SIGO.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/pedidos")]
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = SIGO.Security.AuthorizationPolicies.SelfServiceAccess)]
     public class PedidoController : ControllerBase
     {
         private readonly IPedidoService _pedidoService;
@@ -31,7 +32,7 @@ namespace SIGO.Controllers
             return Ok(_response);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
             var pedido = await _pedidoService.GetById(id);
@@ -80,7 +81,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpPut("id/{id}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Put(int id, [FromBody] PedidoDTO pedidoDTO)
         {
             if (pedidoDTO is null)
@@ -118,7 +119,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             try

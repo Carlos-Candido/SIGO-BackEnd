@@ -7,10 +7,10 @@ using Microsoft.IdentityModel.Tokens;
 using SIGO.Objects.Contracts;
 using Microsoft.Extensions.Configuration;
 using System.Security.Cryptography;
-using AutoMapper;
 using SIGO.Objects.Dtos.Entities;
 using SIGO.Services.Entities;
 using SIGO.Services.Interfaces;
+using SIGO.Security;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -18,8 +18,9 @@ using SIGO.Utils;
 
 namespace SIGO.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/clientes")]
     [ApiController]
+    [Authorize(Policy = AuthorizationPolicies.OperationalAccess)]
     public class ClienteController : ControllerBase
     {
         private readonly IClienteService _clienteService;
@@ -36,7 +37,6 @@ namespace SIGO.Controllers
         }
 
         [HttpGet]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> GetAll()
         {
             var clienteDTO = await _clienteService.GetAll();
@@ -48,8 +48,7 @@ namespace SIGO.Controllers
             return Ok(_response);
         }
 
-        [HttpGet("{id}")]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetByIdWithDetails(int id)
         {
             var clienteDto = await _clienteService.GetByIdWithDetails(id);
@@ -61,7 +60,6 @@ namespace SIGO.Controllers
         }
 
         [HttpGet("nome/{nome}")]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> GetByNameWithDetails(string nome)
         {
             var clientesDto = await _clienteService.GetByNameWithDetails(nome);
@@ -116,8 +114,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpPut("id/{id}")]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Put([FromRoute] int id, [FromBody] ClienteDTO clienteDTO)
         {
             if (clienteDTO is null)
@@ -167,8 +164,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             try
@@ -228,10 +224,12 @@ namespace SIGO.Controllers
             // Claims são informações sobre o usuário que você quer armazenar no token
             var claims = new[]
             {
-        new Claim(JwtRegisteredClaimNames.Sub, clienteDTO.Nome), // Subject (identificador do usuário)
-        new Claim(JwtRegisteredClaimNames.Email, clienteDTO.Email),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // JWT ID, para rastreabilidade
-    };
+                new Claim(ClaimTypes.NameIdentifier, clienteDTO.Id.ToString()),
+                new Claim(ClaimTypes.Name, clienteDTO.Nome),
+                new Claim(ClaimTypes.Email, clienteDTO.Email),
+                new Claim(ClaimTypes.Role, SystemRoles.Cliente),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
@@ -244,7 +242,7 @@ namespace SIGO.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        [HttpPost("Login")]
+        [HttpPost("login")]
         [AllowAnonymous]
         public async Task<ActionResult> Login([FromBody] Login login)
         {

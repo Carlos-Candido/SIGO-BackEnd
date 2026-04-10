@@ -7,8 +7,9 @@ using SIGO.Services.Interfaces;
 
 namespace SIGO.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/pecas")]
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = SIGO.Security.AuthorizationPolicies.OperationalAccess)]
     public class PecaController : ControllerBase
     {
         private readonly IPecaService _pecaService;
@@ -22,7 +23,17 @@ namespace SIGO.Controllers
             _response = new Response();
         }
 
-        [HttpGet("id/{id}")]
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var pecasDTO = await _pecaService.GetAll();
+            _response.Code = ResponseEnum.SUCCESS;
+            _response.Data = pecasDTO;
+            _response.Message = "Pecas listadas com sucesso";
+            return Ok(_response);
+        }
+
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
         {
             var clienteDto = await _pecaService.GetById(id);
@@ -67,7 +78,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Put(int id, PecaDTO pecaDTO)
         {
             if (pecaDTO is null)
@@ -107,7 +118,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             try

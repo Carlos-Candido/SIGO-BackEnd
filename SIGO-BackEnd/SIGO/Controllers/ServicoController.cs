@@ -8,8 +8,9 @@ using SIGO.Services.Interfaces;
 
 namespace SIGO.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/servicos")]
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = SIGO.Security.AuthorizationPolicies.OperationalAccess)]
     public class ServicoController : ControllerBase
     {
         private readonly IServicoService _servicoService;
@@ -35,7 +36,7 @@ namespace SIGO.Controllers
             return Ok(_response);
         }
 
-        [HttpGet("id/{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetByIdWithDetails(int id)
         {
             var servicoDto = await _servicoService.GetByIdWithDetails(id);
@@ -46,7 +47,7 @@ namespace SIGO.Controllers
             return Ok(servicoDto);
         }
 
-        [HttpGet("name/{nome}")]
+        [HttpGet("nome/{nome}")]
         public async Task<IActionResult> GetByNameWithDetails(string nome)
         {
             var servicoDto = await _servicoService.GetByNameWithDetails(nome);
@@ -90,7 +91,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Put(int id, ServicoDTO servicoDTO)
         {
             if (servicoDTO is null)
@@ -132,7 +133,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             try

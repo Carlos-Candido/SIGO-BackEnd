@@ -6,8 +6,9 @@ using SIGO.Services.Interfaces;
 
 namespace SIGO.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/veiculos")]
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = SIGO.Security.AuthorizationPolicies.SelfServiceAccess)]
     public class VeiculoController : ControllerBase
     {
         private readonly IVeiculoService _veiculoService;
@@ -78,7 +79,7 @@ namespace SIGO.Controllers
             return Ok(new { Message = "Veículo cadastrado com sucesso" });
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, VeiculoDTO veiculoDto)
         {
             try
@@ -93,7 +94,7 @@ namespace SIGO.Controllers
         }
 
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             await _veiculoService.Remove(id);

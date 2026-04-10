@@ -4,8 +4,9 @@ using SIGO.Integracao.Interfaces;
 
 namespace SIGO.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/ceps")]
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = SIGO.Security.AuthorizationPolicies.SelfServiceAccess)]
     public class CepController : ControllerBase
     {
         private readonly IViaCepIntegracao _viaCepIntegracao;

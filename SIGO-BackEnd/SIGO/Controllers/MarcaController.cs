@@ -6,8 +6,9 @@ using SIGO.Services.Interfaces;
 
 namespace SIGO.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/marcas")]
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = SIGO.Security.AuthorizationPolicies.OperationalAccess)]
     public class MarcaController : ControllerBase
     {
         private readonly IMarcaService _marcaService;
@@ -31,7 +32,7 @@ namespace SIGO.Controllers
             return Ok(_response);
         }
 
-        [HttpGet("id/{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
             var marcaDto = await _marcaService.GetById(id);
@@ -40,7 +41,7 @@ namespace SIGO.Controllers
             return Ok(marcaDto);
         }
 
-        [HttpGet("name/{nomeMarca}")]
+        [HttpGet("nome/{nomeMarca}")]
         public async Task<IActionResult> GetByName(string nomeMarca)
         {
             var marcasDto = await _marcaService.GetByName(nomeMarca);
@@ -58,7 +59,7 @@ namespace SIGO.Controllers
             return Ok(_response);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] MarcaDTO marcaDTO)
         {
             await _marcaService.Update(marcaDTO, id);
@@ -67,7 +68,7 @@ namespace SIGO.Controllers
             return Ok(_response);
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Remove(int id)
         {
             await _marcaService.Remove(id);

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SIGO.Objects.Contracts;
 using SIGO.Objects.Dtos.Entities;
+using SIGO.Security;
 using SIGO.Services.Interfaces;
 using SIGO.Utils;
 using System.Security.Cryptography;
@@ -16,8 +17,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace SIGO.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/oficinas")]
     [ApiController]
+    [Authorize(Policy = AuthorizationPolicies.OperationalAccess)]
     public class OficinaController : ControllerBase
     {
         private readonly IOficinaService _oficinaService;
@@ -32,7 +34,6 @@ namespace SIGO.Controllers
         }
 
         [HttpGet]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> Get()
         {
             var cores = await _oficinaService.GetAll();
@@ -44,8 +45,7 @@ namespace SIGO.Controllers
             return Ok(_response);
         }
 
-        [HttpGet("name/{nome}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("nome/{nome}")]
         public async Task<IActionResult> GetByName(string nome)
         {
             var cores = await _oficinaService.GetByName(nome);
@@ -65,7 +65,6 @@ namespace SIGO.Controllers
         }
 
         [HttpPost]
-        [AllowAnonymous]
         public async Task<IActionResult> Create(OficinaDTO oficinaDto)
         {
             try
@@ -85,8 +84,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpPut("id/{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] OficinaDTO oficinaDto)
         {
             if (oficinaDto == null)
@@ -117,8 +115,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             try
@@ -157,8 +154,10 @@ namespace SIGO.Controllers
 
             var claims = new[]
             {
-                new Claim(JwtRegisteredClaimNames.Sub, oficinaDTO.Nome),
-                new Claim(JwtRegisteredClaimNames.Email, oficinaDTO.Email),
+                new Claim(ClaimTypes.NameIdentifier, oficinaDTO.Id.ToString()),
+                new Claim(ClaimTypes.Name, oficinaDTO.Nome),
+                new Claim(ClaimTypes.Email, oficinaDTO.Email),
+                new Claim(ClaimTypes.Role, SystemRoles.Oficina),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
@@ -173,7 +172,7 @@ namespace SIGO.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        [HttpPost("Login")]
+        [HttpPost("login")]
         [AllowAnonymous]
         public async Task<ActionResult> Login([FromBody] Login login)
         {

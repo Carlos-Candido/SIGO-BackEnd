@@ -9,8 +9,9 @@ using SIGO.Utils;
 
 namespace SIGO.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/telefones")]
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = SIGO.Security.AuthorizationPolicies.SelfServiceAccess)]
     public class TelefoneController : ControllerBase
     {
         private readonly ITelefoneService _telefoneService;
@@ -24,7 +25,7 @@ namespace SIGO.Controllers
             _response = new Response();
         }
 
-        [HttpGet("id/{id:int}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
         {
             var clienteDto = await _telefoneService.GetById(id);
@@ -35,7 +36,7 @@ namespace SIGO.Controllers
             return Ok(clienteDto);
         }
 
-        [HttpGet("name/{nome}")]
+        [HttpGet("nome/{nome}")]
         public async Task<IActionResult> GetByNameWithDetails(string nome)
         {
             var clientesDto = await _telefoneService.GetTelefoneByNome(nome);
@@ -80,7 +81,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Put(int id, TelefoneDTO telefoneDTO)
         {
             if (telefoneDTO is null)
@@ -122,7 +123,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             try

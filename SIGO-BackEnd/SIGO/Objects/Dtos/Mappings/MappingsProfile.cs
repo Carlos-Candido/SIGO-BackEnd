@@ -10,7 +10,6 @@ namespace SIGO.Objects.Dtos.Mappings
         {
             CreateMap<Cliente, ClienteDTO>()
                 .ForMember(dest => dest.Telefones, opt => opt.MapFrom(src => src.Telefones))
-                .ForMember(dest => dest.Veiculos, opt => opt.MapFrom(src => src.Veiculos))
                 .ReverseMap();
 
             CreateMap<Telefone, TelefoneDTO>().ReverseMap();

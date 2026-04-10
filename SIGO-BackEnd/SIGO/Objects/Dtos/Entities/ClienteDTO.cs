@@ -32,8 +32,5 @@ namespace SIGO.Objects.Dtos.Entities
 
         public List<TelefoneDTO> Telefones { get; set; } = new();
 
-        public List<VeiculoDTO> Veiculos { get; set; } = new();
-
-
     }
 }

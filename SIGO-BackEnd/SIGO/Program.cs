@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Refit;
+using SIGO.Security;
 using SIGO.Data;
 using SIGO.Data.Interfaces;
 using SIGO.Data.Repositories;
@@ -14,6 +15,7 @@ using SIGO.Objects.Models;
 using SIGO.Services.Entities;
 using SIGO.Services.Interfaces;
 using System;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -92,10 +94,24 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.Name,
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
         };
     });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(AuthorizationPolicies.FullAccess, policy =>
+        policy.RequireRole(SystemRoles.Admin));
+
+    options.AddPolicy(AuthorizationPolicies.OperationalAccess, policy =>
+        policy.RequireRole(SystemRoles.Admin, SystemRoles.Funcionario, SystemRoles.Oficina));
+
+    options.AddPolicy(AuthorizationPolicies.SelfServiceAccess, policy =>
+        policy.RequireRole(SystemRoles.Admin, SystemRoles.Funcionario, SystemRoles.Oficina, SystemRoles.Cliente));
+});
 
 builder.Services.AddSwaggerGen(c =>
 {

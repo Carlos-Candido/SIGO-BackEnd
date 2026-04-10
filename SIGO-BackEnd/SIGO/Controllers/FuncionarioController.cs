@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SIGO.Objects.Contracts;
 using SIGO.Objects.Dtos.Entities;
+using SIGO.Security;
 using SIGO.Services.Entities;
 using SIGO.Services.Interfaces;
 using SIGO.Utils;
@@ -17,8 +18,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace SIGO.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/funcionarios")]
     [ApiController]
+    [Authorize(Policy = AuthorizationPolicies.FullAccess)]
     public class FuncionarioController : ControllerBase
     {
         private readonly IFuncionarioService _funcionarioService;
@@ -35,7 +37,6 @@ namespace SIGO.Controllers
         }
 
         [HttpGet]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> GetAll()
         {
             var funcionarioDTO = await _funcionarioService.GetAll();
@@ -47,8 +48,7 @@ namespace SIGO.Controllers
             return Ok(_response);
         }
 
-        [HttpGet("id/{id}")]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetFuncionarioById(int id)
         {
             var funcionarioDTO = await _funcionarioService.GetById(id);
@@ -59,8 +59,7 @@ namespace SIGO.Controllers
             return Ok(funcionarioDTO);
         }
 
-        [HttpGet("name/{nome}")]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("nome/{nome}")]
         public async Task<IActionResult> GetFuncionarioByNome(string nome)
         {
             var clientesDto = await _funcionarioService.GetFuncionarioByNome(nome);
@@ -72,7 +71,6 @@ namespace SIGO.Controllers
         }
 
         [HttpPost]
-        [AllowAnonymous]
         public async Task<IActionResult> Post(FuncionarioDTO funcionarioDTO)
         {
             if (funcionarioDTO is null)
@@ -117,8 +115,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpPut("{id}")]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Put(int id, FuncionarioDTO funcionarioDTO)
         {
             if (funcionarioDTO is null)
@@ -170,8 +167,7 @@ namespace SIGO.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteFuncionario(int id)
         {
             try
@@ -226,8 +222,10 @@ namespace SIGO.Controllers
 
             var claims = new[]
             {
-                new Claim(JwtRegisteredClaimNames.Sub, funcionarioDTO.Nome),
-                new Claim(JwtRegisteredClaimNames.Email, funcionarioDTO.Email),
+                new Claim(ClaimTypes.NameIdentifier, funcionarioDTO.Id.ToString()),
+                new Claim(ClaimTypes.Name, funcionarioDTO.Nome),
+                new Claim(ClaimTypes.Email, funcionarioDTO.Email),
+                new Claim(ClaimTypes.Role, ResolveRoleFromCargo(funcionarioDTO.Cargo)),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
@@ -242,7 +240,7 @@ namespace SIGO.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        [HttpPost("Login")]
+        [HttpPost("login")]
         [AllowAnonymous]
         public async Task<ActionResult> Login([FromBody] Login login)
         {
@@ -288,6 +286,17 @@ namespace SIGO.Controllers
 
                 return StatusCode(StatusCodes.Status500InternalServerError, _response);
             }
+        }
+
+        private static string ResolveRoleFromCargo(string? cargo)
+        {
+            if (string.IsNullOrWhiteSpace(cargo))
+                return SystemRoles.Funcionario;
+
+            var normalizedCargo = cargo.Trim().ToUpperInvariant();
+            return normalizedCargo is "ADMIN" or "ADMINISTRADOR"
+                ? SystemRoles.Admin
+                : SystemRoles.Funcionario;
         }
 
         private static void SanitizeFuncionario(FuncionarioDTO funcionarioDTO)
