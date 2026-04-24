@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,12 +7,7 @@ using SIGO.Objects.Dtos.Entities;
 using SIGO.Security;
 using SIGO.Services.Interfaces;
 using SIGO.Utils;
-using System.Security.Cryptography;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.Extensions.Configuration;
+using SIGO.Validation;
 
 namespace SIGO.Controllers
 {
@@ -23,14 +17,20 @@ namespace SIGO.Controllers
     public class OficinaController : ControllerBase
     {
         private readonly IOficinaService _oficinaService;
+        private readonly IPasswordHasher _passwordHasher;
+        private readonly IJwtTokenService _jwtTokenService;
         private readonly Response _response;
-        private readonly IConfiguration _configuration;
 
-        public OficinaController(IOficinaService oficinaService, IMapper mapper, IConfiguration configuration)
+        public OficinaController(
+            IOficinaService oficinaService,
+            IMapper mapper,
+            IPasswordHasher passwordHasher,
+            IJwtTokenService jwtTokenService)
         {
             _oficinaService = oficinaService;
+            _passwordHasher = passwordHasher;
+            _jwtTokenService = jwtTokenService;
             _response = new Response();
-            _configuration = configuration;
         }
 
         [HttpGet]
@@ -71,17 +71,16 @@ namespace SIGO.Controllers
             try
             {
                 SanitizeOficina(oficinaDto);
-                await _oficinaService.ValidarCnpj(oficinaDto.CNPJ);
 
                 // hash da senha antes de salvar
-                oficinaDto.Senha = GenerateSha256Hash(oficinaDto.Senha);
+                oficinaDto.Senha = _passwordHasher.Hash(oficinaDto.Senha);
 
                 await _oficinaService.Create(oficinaDto);
                 return Ok(new { Message = "Oficina cadastrada com sucesso" });
             }
-            catch (ArgumentException ex)
+            catch (BusinessValidationException ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                return BadRequest(new { Message = "Dados inválidos", Errors = ex.Errors });
             }
         }
 
@@ -99,16 +98,15 @@ namespace SIGO.Controllers
             // força o id da URL no DTO (evita mismatch)
             oficinaDto.Id = id;
 
-            try
+                try
             {
                 SanitizeOficina(oficinaDto);
-                await _oficinaService.ValidarCnpj(oficinaDto.CNPJ, id);
                 await _oficinaService.Update(oficinaDto, id);
                 return Ok(new { Message = "Oficina atualizada com sucesso" });
             }
-            catch (ArgumentException ex)
+            catch (BusinessValidationException ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                return BadRequest(new { Message = "Dados inválidos", Errors = ex.Errors });
             }
             catch (KeyNotFoundException)
             {
@@ -130,49 +128,6 @@ namespace SIGO.Controllers
             }
         }
 
-        private static string GenerateSha256Hash(string input)
-        {
-            byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
-
-            StringBuilder builder = new();
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                builder.Append(bytes[i].ToString("x2"));
-            }
-            return builder.ToString();
-        }
-
-        private string GenerateJwtToken(OficinaDTO oficinaDTO)
-        {
-            var securityKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])
-            );
-
-            var credentials = new SigningCredentials(
-                securityKey,
-                SecurityAlgorithms.HmacSha256
-            );
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, oficinaDTO.Id.ToString()),
-                new Claim(ClaimTypes.Name, oficinaDTO.Nome),
-                new Claim(ClaimTypes.Email, oficinaDTO.Email),
-                new Claim(ClaimTypes.Role, SystemRoles.Oficina),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddHours(2),
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<ActionResult> Login([FromBody] Login login)
@@ -188,7 +143,7 @@ namespace SIGO.Controllers
 
             try
             {
-                login.Password = GenerateSha256Hash(login.Password);
+                login.Password = _passwordHasher.Hash(login.Password);
                 var oficinaDTO = await _oficinaService.Login(login);
 
                 if (oficinaDTO is null)
@@ -200,7 +155,13 @@ namespace SIGO.Controllers
                     return BadRequest(_response);
                 }
 
-                var token = GenerateJwtToken(oficinaDTO);
+                var token = _jwtTokenService.GenerateToken(new JwtTokenRequest
+                {
+                    UserId = oficinaDTO.Id,
+                    Name = oficinaDTO.Nome,
+                    Email = oficinaDTO.Email,
+                    Role = SystemRoles.Oficina
+                });
                 _response.Code = ResponseEnum.SUCCESS;
                 _response.Data = token;
                 _response.Message = "Login realizado com sucesso";

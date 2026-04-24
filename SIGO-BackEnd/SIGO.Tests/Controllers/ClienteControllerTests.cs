@@ -1,8 +1,5 @@
-using System.Security.Claims;
 using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Moq;
 using SIGO.Controllers;
 using SIGO.Objects.Dtos.Entities;
@@ -16,14 +13,9 @@ namespace SIGO.Tests.Controllers
     {
         private readonly Mock<IClienteService> _clienteServiceMock = new();
         private readonly Mock<IMapper> _mapperMock = new();
-        private readonly IConfiguration _configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Jwt:Key"] = "SIGO_Barrament_API_Autentication",
-                ["Jwt:Issuer"] = "SIGO API",
-                ["Jwt:Audience"] = "SIGO Website"
-            })
-            .Build();
+        private readonly Mock<IPasswordHasher> _passwordHasherMock = new();
+        private readonly Mock<IJwtTokenService> _jwtTokenServiceMock = new();
+        private readonly Mock<ICurrentUserService> _currentUserServiceMock = new();
 
         [Fact]
         public async Task GetByIdWithDetails_DeveRetornarForbid_QuandoClienteTentaVerOutroCadastro()
@@ -68,30 +60,14 @@ namespace SIGO.Tests.Controllers
             var controller = new ClienteController(
                 _clienteServiceMock.Object,
                 _mapperMock.Object,
-                _configuration);
+                _passwordHasherMock.Object,
+                _jwtTokenServiceMock.Object,
+                _currentUserServiceMock.Object);
 
-            controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = CreatePrincipal(userId, roles)
-                }
-            };
-
+            _currentUserServiceMock.Setup(s => s.UserId).Returns(userId);
+            _currentUserServiceMock.Setup(s => s.IsInRole(It.IsAny<string>()))
+                .Returns<string>(role => roles.Contains(role));
             return controller;
-        }
-
-        private static ClaimsPrincipal CreatePrincipal(int? userId, params string[] roles)
-        {
-            var claims = new List<Claim>();
-
-            if (userId.HasValue)
-                claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.Value.ToString()));
-
-            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-
-            var identity = new ClaimsIdentity(claims, authenticationType: "Test");
-            return new ClaimsPrincipal(identity);
         }
 
         private static ClienteDTO CriarClienteDto(int id)

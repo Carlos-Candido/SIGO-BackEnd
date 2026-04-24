@@ -5,6 +5,7 @@ using SIGO.Objects.Models;
 using SIGO.Services.Interfaces;
 using System.Linq;
 using SIGO.Objects.Contracts;
+using SIGO.Validation;
 
 namespace SIGO.Services.Entities
 {
@@ -12,12 +13,17 @@ namespace SIGO.Services.Entities
     {
         private readonly IOficinaRepository _oficinaRepository;
         private readonly IMapper _mapper;
+        private readonly ICnpjValidator _cnpjValidator;
 
-        public OficinaService(IOficinaRepository oficinaRepository, IMapper mapper)
+        public OficinaService(
+            IOficinaRepository oficinaRepository,
+            IMapper mapper,
+            ICnpjValidator cnpjValidator)
             : base(oficinaRepository, mapper)
         {
             _oficinaRepository = oficinaRepository;
             _mapper = mapper;
+            _cnpjValidator = cnpjValidator;
         }
 
         public async Task<OficinaDTO?> Login(Login login)
@@ -36,64 +42,51 @@ namespace SIGO.Services.Entities
 
         public new async Task Create(OficinaDTO oficinaDTO)
         {
-            await ValidarCnpj(oficinaDTO.CNPJ);
-            oficinaDTO.CNPJ = SomenteDigitos(oficinaDTO.CNPJ!);
+            await ValidateOficina(oficinaDTO);
+            oficinaDTO.CNPJ = _cnpjValidator.Normalize(oficinaDTO.CNPJ!);
             await base.Create(oficinaDTO);
         }
 
         public override async Task Update(OficinaDTO oficinaDTO, int id)
         {
-            await ValidarCnpj(oficinaDTO.CNPJ, id);
-            oficinaDTO.CNPJ = SomenteDigitos(oficinaDTO.CNPJ!);
+            await ValidateOficina(oficinaDTO, id);
+            oficinaDTO.CNPJ = _cnpjValidator.Normalize(oficinaDTO.CNPJ!);
             await base.Update(oficinaDTO, id);
         }
 
         public async Task ValidarCnpj(string? cnpj, int? ignoreId = null)
         {
-            if (!IsCnpjValido(cnpj))
-                throw new ArgumentException("CNPJ inválido.");
+            var errors = new List<ValidationError>();
+            await AddCnpjErrors(cnpj, errors, ignoreId);
+            ThrowIfInvalid(errors);
+        }
 
-            var cnpjNormalizado = SomenteDigitos(cnpj!);
+        private async Task ValidateOficina(OficinaDTO oficinaDTO, int? ignoreId = null)
+        {
+            var errors = new List<ValidationError>();
+            await AddCnpjErrors(oficinaDTO.CNPJ, errors, ignoreId);
+            ThrowIfInvalid(errors);
+        }
+
+        private async Task AddCnpjErrors(string? cnpj, ICollection<ValidationError> errors, int? ignoreId = null)
+        {
+            if (!_cnpjValidator.IsValid(cnpj))
+            {
+                errors.Add(new ValidationError(nameof(OficinaDTO.CNPJ), "CNPJ inválido."));
+                return;
+            }
+
+            var cnpjNormalizado = _cnpjValidator.Normalize(cnpj!);
             var existe = await _oficinaRepository.ExistsByCnpj(cnpjNormalizado, ignoreId);
             if (existe)
-                throw new ArgumentException("CNPJ já cadastrado.");
+                errors.Add(new ValidationError(nameof(OficinaDTO.CNPJ), "CNPJ já cadastrado."));
         }
 
-        private static bool IsCnpjValido(string? cnpj)
+        private static void ThrowIfInvalid(IReadOnlyCollection<ValidationError> errors)
         {
-            if (string.IsNullOrWhiteSpace(cnpj))
-                return false;
-
-            cnpj = SomenteDigitos(cnpj);
-            if (cnpj.Length != 14 || TodosCaracteresIguais(cnpj))
-                return false;
-
-            var peso1 = new[] { 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2 };
-            var peso2 = new[] { 6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2 };
-
-            var soma = 0;
-            for (var i = 0; i < 12; i++)
-                soma += (cnpj[i] - '0') * peso1[i];
-
-            var resto = soma % 11;
-            var dig13 = resto < 2 ? 0 : 11 - resto;
-            if (dig13 != (cnpj[12] - '0'))
-                return false;
-
-            soma = 0;
-            for (var i = 0; i < 13; i++)
-                soma += (cnpj[i] - '0') * peso2[i];
-
-            resto = soma % 11;
-            var dig14 = resto < 2 ? 0 : 11 - resto;
-
-            return dig14 == (cnpj[13] - '0');
+            if (errors.Count > 0)
+                throw new BusinessValidationException(errors);
         }
 
-        private static bool TodosCaracteresIguais(string valor) =>
-            valor.All(c => c == valor[0]);
-
-        private static string SomenteDigitos(string valor) =>
-            new(valor.Where(char.IsDigit).ToArray());
     }
 }

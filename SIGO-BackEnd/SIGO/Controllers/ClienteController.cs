@@ -2,18 +2,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using SIGO.Objects.Contracts;
-using Microsoft.Extensions.Configuration;
-using System.Security.Cryptography;
 using SIGO.Objects.Dtos.Entities;
-using SIGO.Services.Entities;
 using SIGO.Services.Interfaces;
 using SIGO.Security;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using SIGO.Utils;
+using SIGO.Validation;
 
 namespace SIGO.Controllers
 {
@@ -23,16 +17,25 @@ namespace SIGO.Controllers
     public class ClienteController : ControllerBase
     {
         private readonly IClienteService _clienteService;
-        private readonly IConfiguration _configuration;
+        private readonly IPasswordHasher _passwordHasher;
+        private readonly IJwtTokenService _jwtTokenService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly Response _response;
         private readonly IMapper _mapper;
 
-        public ClienteController(IClienteService clienteService, IMapper mapper, IConfiguration configuration)
+        public ClienteController(
+            IClienteService clienteService,
+            IMapper mapper,
+            IPasswordHasher passwordHasher,
+            IJwtTokenService jwtTokenService,
+            ICurrentUserService currentUserService)
         {
             _clienteService = clienteService;
             _mapper = mapper;
+            _passwordHasher = passwordHasher;
+            _jwtTokenService = jwtTokenService;
+            _currentUserService = currentUserService;
             _response = new Response();
-            _configuration = configuration;
         }
 
         [HttpGet]
@@ -52,7 +55,7 @@ namespace SIGO.Controllers
         [Authorize(Roles = $"{SystemRoles.Admin},{SystemRoles.Oficina},{SystemRoles.Funcionario},{SystemRoles.Cliente}")]
         public async Task<IActionResult> GetByIdWithDetails(int id)
         {
-            if (IsCliente() && GetCurrentUserId() != id)
+            if (_currentUserService.IsInRole(SystemRoles.Cliente) && _currentUserService.UserId != id)
                 return Forbid();
 
             var clienteDto = await _clienteService.GetByIdWithDetails(id);
@@ -88,13 +91,12 @@ namespace SIGO.Controllers
                 return BadRequest(_response);
             }
 
-            try
+                try
             {
                 clienteDTO.Id = 0;
                 SanitizeCliente(clienteDTO);
-                await _clienteService.ValidarCpfCnpj(clienteDTO.Cpf_Cnpj);
 
-                clienteDTO.senha = GenerateSha256Hash(clienteDTO.senha);
+                clienteDTO.senha = _passwordHasher.Hash(clienteDTO.senha);
                 await _clienteService.Create(clienteDTO);
 
                 _response.Code = ResponseEnum.SUCCESS;
@@ -103,11 +105,11 @@ namespace SIGO.Controllers
 
                 return Ok(_response);
             }
-            catch (ArgumentException ex)
+            catch (BusinessValidationException ex)
             {
                 _response.Code = ResponseEnum.INVALID;
-                _response.Message = ex.Message;
-                _response.Data = null;
+                _response.Message = "Dados inválidos";
+                _response.Data = ex.Errors;
                 return BadRequest(_response);
             }
             catch (Exception)
@@ -123,7 +125,7 @@ namespace SIGO.Controllers
         [Authorize(Roles = $"{SystemRoles.Admin},{SystemRoles.Oficina},{SystemRoles.Funcionario},{SystemRoles.Cliente}")]
         public async Task<IActionResult> Put([FromRoute] int id, [FromBody] ClienteDTO clienteDTO)
         {
-            if (IsCliente() && GetCurrentUserId() != id)
+            if (_currentUserService.IsInRole(SystemRoles.Cliente) && _currentUserService.UserId != id)
                 return Forbid();
 
             if (clienteDTO is null)
@@ -148,7 +150,6 @@ namespace SIGO.Controllers
 
                 SanitizeCliente(clienteDTO);
 
-                await _clienteService.ValidarCpfCnpj(clienteDTO.Cpf_Cnpj, id);
                 await _clienteService.Update(clienteDTO, id);
 
                 _response.Code = ResponseEnum.SUCCESS;
@@ -157,11 +158,11 @@ namespace SIGO.Controllers
 
                 return Ok(_response);
             }
-            catch (ArgumentException ex)
+            catch (BusinessValidationException ex)
             {
                 _response.Code = ResponseEnum.INVALID;
-                _response.Message = ex.Message;
-                _response.Data = null;
+                _response.Message = "Dados inválidos";
+                _response.Data = ex.Errors;
                 return BadRequest(_response);
             }
             catch (Exception)
@@ -177,7 +178,7 @@ namespace SIGO.Controllers
         [Authorize(Roles = $"{SystemRoles.Admin},{SystemRoles.Oficina},{SystemRoles.Cliente}")]
         public async Task<IActionResult> Delete(int id)
         {
-            if (IsCliente() && GetCurrentUserId() != id)
+            if (_currentUserService.IsInRole(SystemRoles.Cliente) && _currentUserService.UserId != id)
                 return Forbid();
 
             try
@@ -208,53 +209,6 @@ namespace SIGO.Controllers
             }
         }
 
-        private static string GenerateSha256Hash(string input)
-        {
-            // Converte a string de entrada para um array de bytes e computa o hash
-            byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
-
-            // Converte o array de bytes para uma string hexadecimal
-            StringBuilder builder = new();
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                // Formata cada byte como dois dígitos hexadecimais
-                builder.Append(bytes[i].ToString("x2"));
-            }
-            return builder.ToString();
-        }
-
-        private string GenerateJwtToken(ClienteDTO clienteDTO)
-        {
-            var securityKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])
-            );
-
-            var credentials = new SigningCredentials(
-                securityKey,
-                SecurityAlgorithms.HmacSha256
-            );
-
-            // Claims são informações sobre o usuário que você quer armazenar no token
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, clienteDTO.Id.ToString()),
-                new Claim(ClaimTypes.Name, clienteDTO.Nome),
-                new Claim(ClaimTypes.Email, clienteDTO.Email),
-                new Claim(ClaimTypes.Role, SystemRoles.Cliente),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddHours(2), // Define que o token expira em 2 horas
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<ActionResult> Login([FromBody] Login login)
@@ -270,7 +224,7 @@ namespace SIGO.Controllers
 
             try
             {
-                login.Password = GenerateSha256Hash(login.Password);
+                login.Password = _passwordHasher.Hash(login.Password);
                 var professorDTO = await _clienteService.Login(login);
 
                 if (professorDTO is null)
@@ -282,7 +236,13 @@ namespace SIGO.Controllers
                     return BadRequest(_response);
                 }
 
-                var token = GenerateJwtToken(professorDTO);
+                var token = _jwtTokenService.GenerateToken(new JwtTokenRequest
+                {
+                    UserId = professorDTO.Id,
+                    Name = professorDTO.Nome,
+                    Email = professorDTO.Email,
+                    Role = SystemRoles.Cliente
+                });
                 _response.Code = ResponseEnum.SUCCESS;
                 _response.Data = token;
                 _response.Message = "Login realizado com sucesso";
@@ -317,15 +277,5 @@ namespace SIGO.Controllers
             }
         }
 
-        private bool IsCliente()
-        {
-            return User.IsInRole(SystemRoles.Cliente);
-        }
-
-        private int? GetCurrentUserId()
-        {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return int.TryParse(idClaim, out var id) ? id : null;
-        }
     }
 }

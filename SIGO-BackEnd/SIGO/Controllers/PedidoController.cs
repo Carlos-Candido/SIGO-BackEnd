@@ -5,7 +5,6 @@ using SIGO.Objects.Contracts;
 using SIGO.Objects.Dtos.Entities;
 using SIGO.Security;
 using SIGO.Services.Interfaces;
-using System.Security.Claims;
 
 namespace SIGO.Controllers
 {
@@ -17,16 +16,19 @@ namespace SIGO.Controllers
         private readonly IPedidoService _pedidoService;
         private readonly IServicoService _servicoService;
         private readonly IFuncionarioService _funcionarioService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly Response _response;
 
         public PedidoController(
             IPedidoService pedidoService,
             IServicoService servicoService,
-            IFuncionarioService funcionarioService)
+            IFuncionarioService funcionarioService,
+            ICurrentUserService currentUserService)
         {
             _pedidoService = pedidoService;
             _servicoService = servicoService;
             _funcionarioService = funcionarioService;
+            _currentUserService = currentUserService;
             _response = new Response();
         }
 
@@ -35,9 +37,9 @@ namespace SIGO.Controllers
         public async Task<IActionResult> GetAll()
         {
             var pedidos = await _pedidoService.GetAll();
-            if (IsCliente())
+            if (_currentUserService.IsInRole(SystemRoles.Cliente))
             {
-                var clienteId = GetCurrentUserId();
+                var clienteId = _currentUserService.UserId;
                 pedidos = pedidos.Where(p => clienteId.HasValue && p.idCliente == clienteId.Value);
             }
 
@@ -62,7 +64,7 @@ namespace SIGO.Controllers
                 return NotFound(_response);
             }
 
-            if (IsCliente() && GetCurrentUserId() != pedido.idCliente)
+            if (_currentUserService.IsInRole(SystemRoles.Cliente) && _currentUserService.UserId != pedido.idCliente)
                 return Forbid();
 
             _response.Code = ResponseEnum.SUCCESS;
@@ -75,7 +77,7 @@ namespace SIGO.Controllers
         [Authorize(Roles = SystemRoles.Cliente)]
         public async Task<IActionResult> GetMyServices()
         {
-            var clienteId = GetCurrentUserId();
+            var clienteId = _currentUserService.UserId;
             if (!clienteId.HasValue)
                 return Forbid();
 
@@ -96,7 +98,7 @@ namespace SIGO.Controllers
         [Authorize(Roles = SystemRoles.Cliente)]
         public async Task<IActionResult> GetMyEmployees()
         {
-            var clienteId = GetCurrentUserId();
+            var clienteId = _currentUserService.UserId;
             if (!clienteId.HasValue)
                 return Forbid();
 
@@ -213,15 +215,5 @@ namespace SIGO.Controllers
             }
         }
 
-        private bool IsCliente()
-        {
-            return User.IsInRole(SystemRoles.Cliente);
-        }
-
-        private int? GetCurrentUserId()
-        {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return int.TryParse(idClaim, out var id) ? id : null;
-        }
     }
 }

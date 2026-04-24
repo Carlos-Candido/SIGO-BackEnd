@@ -1,20 +1,13 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SIGO.Objects.Contracts;
 using SIGO.Objects.Dtos.Entities;
 using SIGO.Security;
-using SIGO.Services.Entities;
 using SIGO.Services.Interfaces;
 using SIGO.Utils;
-using Microsoft.IdentityModel.Tokens;
-using System.Security.Cryptography;
-using System.Security.Claims;
-using System.Text;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.Extensions.Configuration;
+using SIGO.Validation;
 
 namespace SIGO.Controllers
 {
@@ -24,16 +17,25 @@ namespace SIGO.Controllers
     public class FuncionarioController : ControllerBase
     {
         private readonly IFuncionarioService _funcionarioService;
+        private readonly IPasswordHasher _passwordHasher;
+        private readonly IJwtTokenService _jwtTokenService;
+        private readonly IFuncionarioRoleResolver _funcionarioRoleResolver;
         private readonly Response _response;
         private readonly IMapper _mapper;
-        private readonly IConfiguration _configuration;
 
-        public FuncionarioController(IFuncionarioService funcionarioService, IMapper mapper, IConfiguration configuration)
+        public FuncionarioController(
+            IFuncionarioService funcionarioService,
+            IMapper mapper,
+            IPasswordHasher passwordHasher,
+            IJwtTokenService jwtTokenService,
+            IFuncionarioRoleResolver funcionarioRoleResolver)
         {
             _funcionarioService = funcionarioService;
             _mapper = mapper;
+            _passwordHasher = passwordHasher;
+            _jwtTokenService = jwtTokenService;
+            _funcionarioRoleResolver = funcionarioRoleResolver;
             _response = new Response();
-            _configuration = configuration;
         }
 
         [HttpGet]
@@ -86,10 +88,9 @@ namespace SIGO.Controllers
             {
                 funcionarioDTO.Id = 0;
                 SanitizeFuncionario(funcionarioDTO);
-                await _funcionarioService.ValidarCpf(funcionarioDTO.Cpf);
 
                 // hash da senha antes de salvar
-                funcionarioDTO.Senha = GenerateSha256Hash(funcionarioDTO.Senha);
+                funcionarioDTO.Senha = _passwordHasher.Hash(funcionarioDTO.Senha);
 
                 await _funcionarioService.Create(funcionarioDTO);
 
@@ -99,11 +100,11 @@ namespace SIGO.Controllers
 
                 return Ok(_response);
             }
-            catch (ArgumentException ex)
+            catch (BusinessValidationException ex)
             {
                 _response.Code = ResponseEnum.INVALID;
-                _response.Message = ex.Message;
-                _response.Data = null;
+                _response.Message = "Dados inválidos";
+                _response.Data = ex.Errors;
                 return BadRequest(_response);
             }
             catch (Exception)
@@ -141,8 +142,6 @@ namespace SIGO.Controllers
 
                 SanitizeFuncionario(funcionarioDTO);
 
-                await _funcionarioService.ValidarCpf(funcionarioDTO.Cpf, id);
-
                 await _funcionarioService.Update(funcionarioDTO, id);
 
                 _response.Code = ResponseEnum.SUCCESS;
@@ -151,11 +150,11 @@ namespace SIGO.Controllers
 
                 return Ok(_response);
             }
-            catch (ArgumentException ex)
+            catch (BusinessValidationException ex)
             {
                 _response.Code = ResponseEnum.INVALID;
-                _response.Message = ex.Message;
-                _response.Data = null;
+                _response.Message = "Dados inválidos";
+                _response.Data = ex.Errors;
                 return BadRequest(_response);
             }
             catch (Exception)
@@ -197,49 +196,6 @@ namespace SIGO.Controllers
             }
         }
 
-        private static string GenerateSha256Hash(string input)
-        {
-            byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
-
-            StringBuilder builder = new();
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                builder.Append(bytes[i].ToString("x2"));
-            }
-            return builder.ToString();
-        }
-
-        private string GenerateJwtToken(FuncionarioDTO funcionarioDTO)
-        {
-            var securityKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]) 
-            );
-
-            var credentials = new SigningCredentials(
-                securityKey,
-                SecurityAlgorithms.HmacSha256
-            );
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, funcionarioDTO.Id.ToString()),
-                new Claim(ClaimTypes.Name, funcionarioDTO.Nome),
-                new Claim(ClaimTypes.Email, funcionarioDTO.Email),
-                new Claim(ClaimTypes.Role, ResolveRoleFromCargo(funcionarioDTO.Cargo)),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddHours(2),
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<ActionResult> Login([FromBody] Login login)
@@ -255,7 +211,7 @@ namespace SIGO.Controllers
 
             try
             {
-                login.Password = GenerateSha256Hash(login.Password);
+                login.Password = _passwordHasher.Hash(login.Password);
                 var funcionarioDTO = await _funcionarioService.Login(login);
 
                 if (funcionarioDTO is null)
@@ -267,7 +223,13 @@ namespace SIGO.Controllers
                     return BadRequest(_response);
                 }
 
-                var token = GenerateJwtToken(funcionarioDTO);
+                var token = _jwtTokenService.GenerateToken(new JwtTokenRequest
+                {
+                    UserId = funcionarioDTO.Id,
+                    Name = funcionarioDTO.Nome,
+                    Email = funcionarioDTO.Email,
+                    Role = _funcionarioRoleResolver.Resolve(funcionarioDTO.Cargo)
+                });
                 _response.Code = ResponseEnum.SUCCESS;
                 _response.Data = token;
                 _response.Message = "Login realizado com sucesso";
@@ -286,17 +248,6 @@ namespace SIGO.Controllers
 
                 return StatusCode(StatusCodes.Status500InternalServerError, _response);
             }
-        }
-
-        private static string ResolveRoleFromCargo(string? cargo)
-        {
-            if (string.IsNullOrWhiteSpace(cargo))
-                return SystemRoles.Funcionario;
-
-            var normalizedCargo = cargo.Trim().ToUpperInvariant();
-            return normalizedCargo is "ADMIN" or "ADMINISTRADOR"
-                ? SystemRoles.Admin
-                : SystemRoles.Funcionario;
         }
 
         private static void SanitizeFuncionario(FuncionarioDTO funcionarioDTO)

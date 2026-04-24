@@ -7,7 +7,6 @@ using SIGO.Objects.Dtos.Entities;
 using SIGO.Security;
 using SIGO.Services.Interfaces;
 using SIGO.Utils;
-using System.Security.Claims;
 
 namespace SIGO.Controllers
 {
@@ -17,12 +16,17 @@ namespace SIGO.Controllers
     public class TelefoneController : ControllerBase
     {
         private readonly ITelefoneService _telefoneService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly Response _response;
         private readonly IMapper _mapper;
 
-        public TelefoneController(ITelefoneService telefoneService, IMapper mapper)
+        public TelefoneController(
+            ITelefoneService telefoneService,
+            IMapper mapper,
+            ICurrentUserService currentUserService)
         {
             _telefoneService = telefoneService;
+            _currentUserService = currentUserService;
             _mapper = mapper;
             _response = new Response();
         }
@@ -36,7 +40,7 @@ namespace SIGO.Controllers
             if (telefoneDto is null)
                 return NotFound(new { Message = "Telefone não encontrado" });
 
-            if (IsCliente() && GetCurrentUserId() != telefoneDto.ClienteId)
+            if (_currentUserService.IsInRole(SystemRoles.Cliente) && _currentUserService.UserId != telefoneDto.ClienteId)
                 return Forbid();
 
             return Ok(telefoneDto);
@@ -72,9 +76,9 @@ namespace SIGO.Controllers
                 telefoneDTO.Id = 0;
                 SanitizeTelefone(telefoneDTO);
 
-                if (IsCliente())
+                if (_currentUserService.IsInRole(SystemRoles.Cliente))
                 {
-                    var clienteId = GetCurrentUserId();
+                    var clienteId = _currentUserService.UserId;
                     if (!clienteId.HasValue || telefoneDTO.ClienteId != clienteId.Value)
                         return Forbid();
                 }
@@ -120,14 +124,14 @@ namespace SIGO.Controllers
                     return NotFound(_response);
                 }
 
-                if (IsCliente() && GetCurrentUserId() != existingTelefoneDTO.ClienteId)
+                if (_currentUserService.IsInRole(SystemRoles.Cliente) && _currentUserService.UserId != existingTelefoneDTO.ClienteId)
                     return Forbid();
 
                 SanitizeTelefone(telefoneDTO);
 
-                if (IsCliente())
+                if (_currentUserService.IsInRole(SystemRoles.Cliente))
                 {
-                    var clienteId = GetCurrentUserId();
+                    var clienteId = _currentUserService.UserId;
                     if (!clienteId.HasValue || telefoneDTO.ClienteId != clienteId.Value)
                         return Forbid();
                 }
@@ -165,7 +169,7 @@ namespace SIGO.Controllers
                     return NotFound(_response);
                 }
 
-                if (IsCliente() && GetCurrentUserId() != telefoneDTO.ClienteId)
+                if (_currentUserService.IsInRole(SystemRoles.Cliente) && _currentUserService.UserId != telefoneDTO.ClienteId)
                     return Forbid();
 
                 await _telefoneService.Remove(id);
@@ -189,15 +193,5 @@ namespace SIGO.Controllers
             telefoneDTO.Numero = SanitizeHelper.ApenasDigitos(telefoneDTO.Numero);
         }
 
-        private bool IsCliente()
-        {
-            return User.IsInRole(SystemRoles.Cliente);
-        }
-
-        private int? GetCurrentUserId()
-        {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return int.TryParse(idClaim, out var id) ? id : null;
-        }
     }
 }

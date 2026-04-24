@@ -1,6 +1,4 @@
-using System.Security.Claims;
 using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using SIGO.Controllers;
@@ -16,6 +14,7 @@ namespace SIGO.Tests.Controllers
     {
         private readonly Mock<IVeiculoService> _veiculoServiceMock = new();
         private readonly Mock<IMapper> _mapperMock = new();
+        private readonly Mock<ICurrentUserService> _currentUserServiceMock = new();
 
         [Fact]
         public async Task Get_DeveFiltrarVeiculosDoClienteLogado()
@@ -53,29 +52,15 @@ namespace SIGO.Tests.Controllers
 
         private VeiculoController CreateController(int? userId = null, params string[] roles)
         {
-            var controller = new VeiculoController(_veiculoServiceMock.Object, _mapperMock.Object);
-            controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = CreatePrincipal(userId, roles)
-                }
-            };
+            var controller = new VeiculoController(
+                _veiculoServiceMock.Object,
+                _mapperMock.Object,
+                _currentUserServiceMock.Object);
 
+            _currentUserServiceMock.Setup(s => s.UserId).Returns(userId);
+            _currentUserServiceMock.Setup(s => s.IsInRole(It.IsAny<string>()))
+                .Returns<string>(role => roles.Contains(role));
             return controller;
-        }
-
-        private static ClaimsPrincipal CreatePrincipal(int? userId, params string[] roles)
-        {
-            var claims = new List<Claim>();
-
-            if (userId.HasValue)
-                claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.Value.ToString()));
-
-            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-
-            var identity = new ClaimsIdentity(claims, authenticationType: "Test");
-            return new ClaimsPrincipal(identity);
         }
 
         private static VeiculoDTO CriarVeiculoDto(int id, int clienteId)

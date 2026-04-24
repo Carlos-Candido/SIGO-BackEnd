@@ -6,6 +6,7 @@ using SIGO.Objects.Models;
 using SIGO.Services.Interfaces;
 using System.Linq;
 using SIGO.Objects.Contracts;
+using SIGO.Validation;
 
 namespace SIGO.Services.Entities
 {
@@ -13,12 +14,17 @@ namespace SIGO.Services.Entities
     {
         private readonly IFuncionarioRepository _funcionarioRepository;
         private readonly IMapper _mapper;
+        private readonly ICpfValidator _cpfValidator;
 
-        public FuncionarioService(IFuncionarioRepository funcionarioRepository, IMapper mapper)
+        public FuncionarioService(
+            IFuncionarioRepository funcionarioRepository,
+            IMapper mapper,
+            ICpfValidator cpfValidator)
             : base(funcionarioRepository, mapper)
         {
             _funcionarioRepository = funcionarioRepository;
             _mapper = mapper;
+            _cpfValidator = cpfValidator;
         }
 
         public async Task<FuncionarioDTO?> Login(Login login)
@@ -37,66 +43,52 @@ namespace SIGO.Services.Entities
 
         public new async Task Create(FuncionarioDTO funcionarioDTO)
         {
-            await ValidarCpf(funcionarioDTO.Cpf);
-            funcionarioDTO.Cpf = SomenteDigitos(funcionarioDTO.Cpf);
+            await ValidateFuncionario(funcionarioDTO);
+            funcionarioDTO.Cpf = _cpfValidator.Normalize(funcionarioDTO.Cpf);
             await base.Create(funcionarioDTO);
         }
 
         public override async Task Update(FuncionarioDTO funcionarioDTO, int id)
         {
-            await ValidarCpf(funcionarioDTO.Cpf, id);
-            funcionarioDTO.Cpf = SomenteDigitos(funcionarioDTO.Cpf);
+            await ValidateFuncionario(funcionarioDTO, id);
+            funcionarioDTO.Cpf = _cpfValidator.Normalize(funcionarioDTO.Cpf);
             await base.Update(funcionarioDTO, id);
         }
 
         public async Task ValidarCpf(string? cpf, int? ignoreId = null)
         {
-            if (!IsCpfValido(cpf))
-                throw new ArgumentException("CPF inválido.");
+            var errors = new List<ValidationError>();
+            await AddCpfErrors(cpf, errors, ignoreId);
+            ThrowIfInvalid(errors);
+        }
 
-            var cpfNormalizado = SomenteDigitos(cpf!);
+        private async Task ValidateFuncionario(FuncionarioDTO funcionarioDTO, int? ignoreId = null)
+        {
+            var errors = new List<ValidationError>();
+            await AddCpfErrors(funcionarioDTO.Cpf, errors, ignoreId);
+            ThrowIfInvalid(errors);
+        }
+
+        private async Task AddCpfErrors(string? cpf, ICollection<ValidationError> errors, int? ignoreId = null)
+        {
+            if (!_cpfValidator.IsValid(cpf))
+            {
+                errors.Add(new ValidationError(nameof(FuncionarioDTO.Cpf), "CPF inválido."));
+                return;
+            }
+
+            var cpfNormalizado = _cpfValidator.Normalize(cpf!);
             var existe = await _funcionarioRepository.ExistsByCpf(cpfNormalizado, ignoreId);
 
             if (existe)
-                throw new ArgumentException("CPF já cadastrado.");
+                errors.Add(new ValidationError(nameof(FuncionarioDTO.Cpf), "CPF já cadastrado."));
         }
 
-        private static bool IsCpfValido(string? cpf)
+        private static void ThrowIfInvalid(IReadOnlyCollection<ValidationError> errors)
         {
-            if (string.IsNullOrWhiteSpace(cpf))
-                return false;
-
-            cpf = SomenteDigitos(cpf);
-            if (cpf.Length != 11 || TodosCaracteresIguais(cpf))
-                return false;
-
-            var soma = 0;
-            for (var i = 0; i < 9; i++)
-                soma += (cpf[i] - '0') * (10 - i);
-
-            var resto = (soma * 10) % 11;
-            if (resto == 10 || resto == 11)
-                resto = 0;
-
-            if (resto != (cpf[9] - '0'))
-                return false;
-
-            soma = 0;
-            for (var i = 0; i < 10; i++)
-                soma += (cpf[i] - '0') * (11 - i);
-
-            resto = (soma * 10) % 11;
-            if (resto == 10 || resto == 11)
-                resto = 0;
-
-            return resto == (cpf[10] - '0');
+            if (errors.Count > 0)
+                throw new BusinessValidationException(errors);
         }
-
-        private static string SomenteDigitos(string valor) =>
-            new(valor.Where(char.IsDigit).ToArray());
-
-        private static bool TodosCaracteresIguais(string valor) =>
-            valor.All(c => c == valor[0]);
 
     }
 }

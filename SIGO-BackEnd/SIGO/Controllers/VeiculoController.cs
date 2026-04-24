@@ -5,7 +5,6 @@ using SIGO.Objects.Contracts;
 using SIGO.Objects.Dtos.Entities;
 using SIGO.Security;
 using SIGO.Services.Interfaces;
-using System.Security.Claims;
 
 namespace SIGO.Controllers
 {
@@ -15,11 +14,16 @@ namespace SIGO.Controllers
     public class VeiculoController : ControllerBase
     {
         private readonly IVeiculoService _veiculoService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly Response _response;
 
-        public VeiculoController(IVeiculoService veiculoService, IMapper mapper)
+        public VeiculoController(
+            IVeiculoService veiculoService,
+            IMapper mapper,
+            ICurrentUserService currentUserService)
         {
             _veiculoService = veiculoService;
+            _currentUserService = currentUserService;
             _response = new Response();
         }
 
@@ -28,9 +32,9 @@ namespace SIGO.Controllers
         public async Task<IActionResult> Get()
         {
             var veiculos = await _veiculoService.GetAll();
-            if (IsCliente())
+            if (_currentUserService.IsInRole(SystemRoles.Cliente))
             {
-                var clienteId = GetCurrentUserId();
+                var clienteId = _currentUserService.UserId;
                 veiculos = veiculos.Where(v => clienteId.HasValue && v.ClienteId == clienteId.Value);
             }
 
@@ -46,9 +50,9 @@ namespace SIGO.Controllers
         public async Task<IActionResult> GetByPlaca(string placa)
         {
             var veiculos = await _veiculoService.GetByPlaca(placa);
-            if (IsCliente())
+            if (_currentUserService.IsInRole(SystemRoles.Cliente))
             {
-                var clienteId = GetCurrentUserId();
+                var clienteId = _currentUserService.UserId;
                 veiculos = veiculos.Where(v => v is not null && clienteId.HasValue && v.ClienteId == clienteId.Value);
             }
 
@@ -71,9 +75,9 @@ namespace SIGO.Controllers
         public async Task<IActionResult> GetByTipo(string tipo)
         {
             var veiculos = await _veiculoService.GetByTipo(tipo);
-            if (IsCliente())
+            if (_currentUserService.IsInRole(SystemRoles.Cliente))
             {
-                var clienteId = GetCurrentUserId();
+                var clienteId = _currentUserService.UserId;
                 veiculos = veiculos.Where(v => clienteId.HasValue && v.ClienteId == clienteId.Value);
             }
 
@@ -122,15 +126,5 @@ namespace SIGO.Controllers
             return Ok(new { Message = "Veículo removido com sucesso" });
         }
 
-        private bool IsCliente()
-        {
-            return User.IsInRole(SystemRoles.Cliente);
-        }
-
-        private int? GetCurrentUserId()
-        {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return int.TryParse(idClaim, out var id) ? id : null;
-        }
     }
 }

@@ -14,6 +14,7 @@ using SIGO.Objects.Dtos.Mappings;
 using SIGO.Objects.Models;
 using SIGO.Services.Entities;
 using SIGO.Services.Interfaces;
+using SIGO.Validation;
 using System;
 using System.Security.Claims;
 using System.Text;
@@ -22,6 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 const string FrontendCorsPolicy = "FrontendCorsPolicy";
 
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddAutoMapper(opt => { }, AppDomain.CurrentDomain.GetAssemblies());
@@ -74,6 +76,13 @@ builder.Services.AddScoped<IOficinaRepository, OficinaRepository>();
 
 builder.Services.AddScoped<IPedidoService, PedidoService>();
 builder.Services.AddScoped<IPedidoRepository, PedidoRepository>();
+builder.Services.AddScoped<IPasswordHasher, Sha256PasswordHasher>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IFuncionarioRoleResolver, FuncionarioRoleResolver>();
+builder.Services.AddScoped<ICurrentUserService, HttpContextCurrentUserService>();
+builder.Services.AddScoped<ICpfValidator, CpfValidator>();
+builder.Services.AddScoped<ICnpjValidator, CnpjValidator>();
+builder.Services.AddScoped<ICpfCnpjValidator, CpfCnpjValidator>();
 builder.Services.AddScoped<IViaCepIntegracao, ViaCepIntegracao>();
 builder.Services.AddRefitClient<IViaCepIntegracaoRefit>()
     .ConfigureHttpClient(c =>
